@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CAIR Chat Bandwidth Selection</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="header">CAIR</div>
+    <div class="chat-container">
+        <h2 style="text-align:center; color:#ff6fae;">Select Bandwidth</h2>
+        <div class="bandwidth-select">
+            <button class="bandwidth-btn" onclick="window.location.href='/chat/low'">Low</button>
+            <button class="bandwidth-btn" onclick="window.location.href='/chat/medium'">Medium</button>
+            <button class="bandwidth-btn" onclick="window.location.href='/chat/high'">High</button>
+        </div>
+    </div>
+</body>
+</html>
