@@ -6,9 +6,12 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="header">CAIR</div>
+    <div class="header">
+        <img src="{{ url_for('static', filename='cair_logo.png') }}" alt="CAIR Logo" class="logo-main">
+        <div class="cair-title">CAIR</div>
+    </div>
     <div class="chat-container">
-        <h2 style="text-align:center; color:#ff6fae;">Select Bandwidth</h2>
+        <h2 style="text-align:center; color:#4ecdc4;">Select Bandwidth</h2>
         <div class="bandwidth-select">
             <button class="bandwidth-btn" onclick="window.location.href='/chat/low'">Low</button>
             <button class="bandwidth-btn" onclick="window.location.href='/chat/medium'">Medium</button>

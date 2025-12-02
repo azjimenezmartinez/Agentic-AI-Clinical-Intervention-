@@ -1,16 +1,28 @@
 body {
     font-family: 'Segoe UI', Arial, sans-serif;
-    background: linear-gradient(135deg, #e3f0ff 0%, #ffe3f0 100%);
+    background: linear-gradient(135deg, #e3f0ff 0%, #f8fbff 60%, #ffe3f0 100%);
     min-height: 100vh;
     margin: 0;
 }
 .header {
     text-align: center;
     padding: 2rem 0 1rem 0;
+    position: relative;
+}
+.logo-main {
+    width: 110px;
+    height: auto;
+    margin-bottom: 0.5rem;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+.cair-title {
     font-size: 2.5rem;
     font-weight: bold;
-    color: #ff6fae;
+    color: #4ecdc4;
     letter-spacing: 2px;
+    margin-bottom: 0.5rem;
 }
 .bandwidth-select {
     display: flex;
@@ -19,25 +31,25 @@ body {
     margin-bottom: 2rem;
 }
 .bandwidth-btn {
-    background: linear-gradient(90deg, #e3f0ff 0%, #ffb6d5 100%);
+    background: linear-gradient(90deg, #e3f0ff 0%, #4ecdc4 60%, #ffb6d5 100%);
     border: none;
     border-radius: 1.5rem;
     padding: 1rem 2rem;
     font-size: 1.2rem;
     color: #fff;
     cursor: pointer;
-    box-shadow: 0 2px 8px rgba(255, 111, 174, 0.15);
+    box-shadow: 0 2px 8px rgba(76, 205, 196, 0.15);
     transition: background 0.3s;
 }
 .bandwidth-btn:hover {
-    background: linear-gradient(90deg, #ffb6d5 0%, #e3f0ff 100%);
+    background: linear-gradient(90deg, #ffb6d5 0%, #4ecdc4 100%);
 }
 .chat-container {
     max-width: 600px;
     margin: 2rem auto;
-    background: linear-gradient(135deg, #e3f0ff 0%, #ffe3f0 100%);
+    background: linear-gradient(135deg, #e3f0ff 0%, #f8fbff 60%, #ffe3f0 100%);
     border-radius: 2rem;
-    box-shadow: 0 4px 24px rgba(255, 111, 174, 0.12);
+    box-shadow: 0 4px 24px rgba(76, 205, 196, 0.12);
     padding: 2rem;
 }
 .messages {
@@ -59,13 +71,13 @@ body {
 .bubble {
     padding: 1rem 1.5rem;
     border-radius: 1.5rem;
-    background: linear-gradient(90deg, #e3f0ff 0%, #ffb6d5 100%);
+    background: linear-gradient(90deg, #e3f0ff 0%, #4ecdc4 60%, #ffb6d5 100%);
     color: #333;
     max-width: 70%;
-    box-shadow: 0 2px 8px rgba(255, 111, 174, 0.10);
+    box-shadow: 0 2px 8px rgba(76, 205, 196, 0.10);
 }
 .bubble.assistant {
-    background: linear-gradient(90deg, #ffb6d5 0%, #e3f0ff 100%);
+    background: linear-gradient(90deg, #ffb6d5 0%, #4ecdc4 100%);
     color: #ff6fae;
 }
 .send-btn {
@@ -84,14 +96,14 @@ body {
 }
 .clear-btn {
     background: #e3f0ff;
-    color: #ff6fae;
+    color: #4ecdc4;
     border: none;
     border-radius: 1.5rem;
     padding: 0.5rem 1.5rem;
     font-size: 1rem;
     cursor: pointer;
     margin-top: 1rem;
-    box-shadow: 0 2px 8px rgba(255, 111, 174, 0.10);
+    box-shadow: 0 2px 8px rgba(76, 205, 196, 0.10);
     transition: background 0.3s;
 }
 .clear-btn:hover {
@@ -102,7 +114,7 @@ body {
     margin-bottom: 1rem;
 }
 label {
-    color: #ff6fae;
+    color: #4ecdc4;
     font-weight: 500;
     margin-bottom: 0.5rem;
     display: block;
@@ -111,7 +123,7 @@ input, select, textarea {
     width: 100%;
     padding: 0.7rem;
     border-radius: 1rem;
-    border: 1px solid #ffb6d5;
+    border: 1px solid #4ecdc4;
     margin-bottom: 0.5rem;
     font-size: 1rem;
     background: #fff;
