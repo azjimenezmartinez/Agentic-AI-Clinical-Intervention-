@@ -10,6 +10,7 @@ from flask import Flask, render_template, request, jsonify
 from werkzeug.utils import secure_filename
 from pymongo import MongoClient
 from app_config import MONGO_URI, UPLOAD_FOLDER, ALLOWED_EXTENSIONS
+from clinical_symptom_ontology import clinical_symptom_ontology
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
