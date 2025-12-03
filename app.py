@@ -114,28 +114,51 @@ def send_message():
         save_message_to_db(user_payload)
 
     # Build agent input
+    # Compose a summary of latest user demographics and symptoms for agent context
+    latest_user = None
+    for msg in reversed(list(db.chats.find({'bandwidth': bandwidth, 'role': 'user'}, {'_id': 0}))):
+        latest_user = msg
+        break
+    agent_context = ""
+    image_content = []
+    if latest_user:
+        agent_context = f"Patient Age: {latest_user.get('age', '')}\nSex at Birth: {latest_user.get('sex', '')}\n"
+        if latest_user.get('pain') is not None:
+            agent_context += f"Pain Level: {latest_user.get('pain', '')}\n"
+        if latest_user.get('symptoms'):
+            agent_context += f"Symptoms: {latest_user.get('symptoms', '')}\n"
+        if latest_user.get('images'):
+            for img_path in latest_user.get('images', []):
+                image_content.append({
+                    "type": "image_url",
+                    "image_url": {"url": encode_image(img_path, "image/png")}
+                })
+
     agent_messages = [
         {
             "role": "system",
-            "content": "You are CAIR (Clinical Agent for Intelligent Response), an assistive clinical reasoning agent designed to support non-specialist healthcare workers in low-resource or rural environments. You do NOT replace a medical professional. Your job is to provide structured, safe, supportive guidance based only on the symptoms and image descriptions provided by the user."
+            "content": "You are CAIR (Clinical Agent for Intelligent Response), an assistive clinical reasoning agent designed to support non-specialist healthcare workers in low-resource or rural environments. You do NOT replace a medical professional. Your job is to provide structured, safe, supportive guidance based only on the symptoms and image descriptions provided by the user.\n\nAlways take into account the patient's age and sex at birth when generating medical reasoning, diagnoses, urgency levels, or recommendations."
+        },
+        {
+            "role": "user",
+            "content": ([{"type": "text", "text": agent_context.strip()}] + image_content)
         }
     ]
     # Get all chat history for this bandwidth
     history = list(db.chats.find({'bandwidth': bandwidth}, {'_id': 0}))
     for msg in history:
         if msg['role'] == 'user':
-            agent_messages.append({
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": msg.get('message', '') or msg.get('symptoms', '')}
-                ]
-            })
-            # If images, add as image_url
+            user_text = msg.get('message', '') or msg.get('symptoms', '')
+            content_list = [{"type": "text", "text": user_text}]
             for img_path in msg.get('images', []):
-                agent_messages[-1]['content'].append({
+                content_list.append({
                     "type": "image_url",
                     "image_url": {"url": encode_image(img_path, "image/png")}
                 })
+            agent_messages.append({
+                "role": "user",
+                "content": content_list
+            })
         elif msg['role'] == 'assistant':
             agent_messages.append({
                 "role": "assistant",
@@ -158,7 +181,17 @@ def send_message():
         temperature = 1,
         top_p = 1,
     )
+    # Improve output spacing for readability
     assistant_reply = response.choices[0].message.content if response.choices else "No response."
+    if assistant_reply:
+        # Add extra line breaks between sections if not present
+        import re
+        # Add two newlines before each section header for clear separation
+        assistant_reply = re.sub(r'(\*\*Possible Diagnosis\*\*)', r'\n\n\1\n', assistant_reply)
+        assistant_reply = re.sub(r'(\*\*Priority Level\*\*)', r'\n\n\1\n', assistant_reply)
+        assistant_reply = re.sub(r'(\*\*Recommended Next Steps\*\*)', r'\n\n\1\n', assistant_reply)
+        # Add extra spacing after numbered steps
+        assistant_reply = re.sub(r'(\d+\.)', r'\n\1', assistant_reply)
     # Save CAIR response
     assistant_payload = {
         'role': 'assistant',

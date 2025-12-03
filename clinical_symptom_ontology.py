@@ -88,5 +88,14 @@ clinical_symptom_ontology = {
         "risk_factors": ["immunosuppression", "recent travel", "exposure history"],
         "symptom_clusters": [["fever", "rash", "lymphadenopathy"], ["chills", "malaise"]],
         "progression_patterns": ["acute", "chronic", "progressive"]
+    },
+    "Pregnancy": {
+        "common_symptoms": ["nausea", "vomiting", "fatigue", "abdominal pain", "vaginal bleeding", "swelling", "headache"],
+        "severity_indicators": ["severe abdominal pain", "persistent vomiting", "high blood pressure", "visual changes"],
+        "red_flags": ["heavy vaginal bleeding", "severe abdominal pain", "seizure", "loss of fetal movement", "preterm labor"],
+        "likely_differentials": ["normal pregnancy", "ectopic pregnancy", "pre-eclampsia", "placental abruption", "miscarriage", "gestational diabetes"],
+        "risk_factors": ["advanced maternal age", "hypertension", "diabetes", "previous pregnancy complications", "multiple gestation"],
+        "symptom_clusters": [["nausea", "vomiting", "fatigue"], ["abdominal pain", "vaginal bleeding"]],
+        "progression_patterns": ["first trimester", "second trimester", "third trimester", "postpartum"]
     }
 }
