@@ -10,7 +10,7 @@ body {
     position: relative;
 }
 .logo-main {
-    width: 200px;
+    width: 250px;
     height: auto;
     margin-bottom: 0.5rem;
     display: block;
@@ -29,6 +29,7 @@ body {
     justify-content: center;
     gap: 2rem;
     margin-bottom: 2rem;
+
 }
 .bandwidth-btn {
     background: linear-gradient(90deg, #e3f0ff 0%, #4ecdc4 60%, #ffb6d5 100%);
@@ -75,10 +76,11 @@ body {
     color: #333;
     max-width: 70%;
     box-shadow: 0 2px 8px rgba(76, 205, 196, 0.10);
+    white-space: pre-wrap;
 }
 .bubble.assistant {
     background: linear-gradient(90deg, #ffb6d5 0%, #4ecdc4 100%);
-    color: #ff6fae;
+    color: #000;
 }
 .send-btn {
     background: #ff6fae;

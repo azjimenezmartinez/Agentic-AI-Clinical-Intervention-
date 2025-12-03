@@ -7,13 +7,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     userForm.onsubmit = async function(e) {
         e.preventDefault();
-        userInfo = {
+        // Send initial user info to backend using /api/start_chat
+        const userInfo = {
             name: userForm.name.value,
             age: userForm.age.value,
             sex: userForm.sex.value,
+            pain: null,
             bandwidth: 'low'
         };
-        await fetch('/api/user_info', {
+        await fetch('/api/start_chat', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(userInfo)

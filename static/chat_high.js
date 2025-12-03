@@ -8,33 +8,23 @@ document.addEventListener('DOMContentLoaded', function() {
     userForm.onsubmit = async function(e) {
         e.preventDefault();
         const formData = new FormData(userForm);
-        userInfo = {
-            name: formData.get('name'),
-            age: formData.get('age'),
-            sex: formData.get('sex'),
-            pain: formData.get('pain'),
-            symptoms: formData.get('symptoms'),
-            bandwidth: 'high'
-        };
-        // Upload images if any
-        if (userForm.images.files.length > 0) {
-            for (let i = 0; i < userForm.images.files.length; i++) {
-                const imgData = new FormData();
-                imgData.append('image', userForm.images.files[i]);
-                await fetch('/api/upload_image', {
-                    method: 'POST',
-                    body: imgData
-                });
-            }
-        }
-        await fetch('/api/user_info', {
+        // Send initial user info and images to backend
+        const res = await fetch('/api/start_chat', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(userInfo)
+            body: formData
         });
         userForm.style.display = 'none';
         chatSection.style.display = '';
-        loadHistory();
+        // Get agent's first response
+        await loadHistory();
+        // Fetch agent response and display
+        const chatRes = await fetch('/api/chat_history?bandwidth=high');
+        const chatData = await chatRes.json();
+        // Find last assistant message and display
+        const lastAssistant = chatData.history.reverse().find(m => m.role === 'assistant');
+        if (lastAssistant) {
+            addMessage('assistant', lastAssistant.response || lastAssistant.content);
+        }
     };
 
     chatForm.onsubmit = async function(e) {
@@ -42,10 +32,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const message = chatForm.message.value;
         addMessage('user', message);
         chatForm.message.value = '';
+        // Support image upload during chat
+        const formData = new FormData();
+        formData.append('message', message);
+        formData.append('bandwidth', 'high');
+        // If user attaches images in chat, send them
+        if (chatForm.images && chatForm.images.files.length > 0) {
+            for (let i = 0; i < chatForm.images.files.length; i++) {
+                formData.append('image' + i, chatForm.images.files[i]);
+            }
+        }
         const res = await fetch('/api/send_message', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({message, bandwidth: 'high'})
+            body: formData
         });
         const data = await res.json();
         addMessage('assistant', data.response);
@@ -60,7 +59,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const res = await fetch('/api/chat_history?bandwidth=high');
         const data = await res.json();
         messagesDiv.innerHTML = '';
-        data.history.forEach(msg => addMessage(msg.role, msg.content));
+        data.history.forEach(msg => {
+            if (msg.role === 'assistant') {
+                addMessage('assistant', msg.response || msg.content);
+            } else if (msg.role === 'user') {
+                addMessage('user', msg.message || msg.content);
+            }
+        });
     }
 
     function addMessage(role, content) {

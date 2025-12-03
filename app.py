@@ -53,10 +53,15 @@ from datetime import datetime
 def now():
     return datetime.utcnow().isoformat()
 
-# API: Send message (handles all bandwidths)
+
+
+# API: Send follow-up message (handles all bandwidths)
 @app.route('/api/send_message', methods=['POST'])
-def send_message():
-    # High bandwidth: FormData (multipart)
+
+# API: Start chat with initial user info (no symptoms)
+@app.route('/api/start_chat', methods=['POST'])
+def start_chat():
+    # Accept initial user info and treat as context
     if request.content_type and request.content_type.startswith('multipart/form-data'):
         form = request.form
         files = request.files
@@ -64,9 +69,7 @@ def send_message():
         age = form.get('age')
         sex = form.get('sex')
         pain = form.get('pain')
-        symptoms = form.get('symptoms')
-        message = form.get('message')
-        bandwidth = 'high'
+        bandwidth = form.get('bandwidth', 'low')
         image_paths = []
         for file_key in files:
             file = files[file_key]
@@ -75,65 +78,81 @@ def send_message():
                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(filepath)
                 image_paths.append(filepath)
-        # Save user message
         user_payload = {
-            'role': 'user',
+            'role': 'user_info',
             'name': name,
             'age': age,
             'sex': sex,
             'pain': pain,
-            'symptoms': symptoms,
-            'message': message,
             'images': image_paths,
             'bandwidth': bandwidth,
             'timestamp': now()
         }
-        save_message_to_db(user_payload)
     else:
-        # Low/Medium bandwidth: JSON
         data = request.get_json(force=True)
         name = data.get('name')
         age = data.get('age')
         sex = data.get('sex')
         pain = data.get('pain')
-        symptoms = data.get('symptoms')
-        message = data.get('message')
         bandwidth = data.get('bandwidth', 'low')
         user_payload = {
-            'role': 'user',
+            'role': 'user_info',
             'name': name,
             'age': age,
             'sex': sex,
             'pain': pain,
-            'symptoms': symptoms,
+            'images': [],
+            'bandwidth': bandwidth,
+            'timestamp': now()
+        }
+    save_message_to_db(user_payload)
+    return jsonify({'status': 'ok'})
+
+# API: Send message (handles all bandwidths, including images)
+@app.route('/api/send_message', methods=['POST'])
+def send_message():
+    # High bandwidth: FormData (multipart)
+    if request.content_type and request.content_type.startswith('multipart/form-data'):
+        form = request.form
+        files = request.files
+        message = form.get('message')
+        bandwidth = form.get('bandwidth', 'high')
+        image_paths = []
+        for file_key in files:
+            file = files[file_key]
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(filepath)
+                image_paths.append(filepath)
+        user_payload = {
+            'role': 'user',
+            'message': message,
+            'images': image_paths,
+            'bandwidth': bandwidth,
+            'timestamp': now()
+        }
+    else:
+        data = request.get_json(force=True)
+        message = data.get('message')
+        bandwidth = data.get('bandwidth', 'low')
+        user_payload = {
+            'role': 'user',
             'message': message,
             'images': [],
             'bandwidth': bandwidth,
             'timestamp': now()
         }
-        save_message_to_db(user_payload)
+    save_message_to_db(user_payload)
 
-    # Build agent input
-    # Compose a summary of latest user demographics and symptoms for agent context
-    latest_user = None
-    for msg in reversed(list(db.chats.find({'bandwidth': bandwidth, 'role': 'user'}, {'_id': 0}))):
-        latest_user = msg
-        break
+    # Build agent input from chat history
+    # Get user info context
+    user_info = db.chats.find_one({'bandwidth': bandwidth, 'role': 'user_info'}, sort=[('timestamp', -1)])
     agent_context = ""
-    image_content = []
-    if latest_user:
-        agent_context = f"Patient Age: {latest_user.get('age', '')}\nSex at Birth: {latest_user.get('sex', '')}\n"
-        if latest_user.get('pain') is not None:
-            agent_context += f"Pain Level: {latest_user.get('pain', '')}\n"
-        if latest_user.get('symptoms'):
-            agent_context += f"Symptoms: {latest_user.get('symptoms', '')}\n"
-        if latest_user.get('images'):
-            for img_path in latest_user.get('images', []):
-                image_content.append({
-                    "type": "image_url",
-                    "image_url": {"url": encode_image(img_path, "image/png")}
-                })
-
+    if user_info:
+        agent_context = f"Patient Age: {user_info.get('age', '')}\nSex at Birth: {user_info.get('sex', '')}\n"
+        if user_info.get('pain') is not None:
+            agent_context += f"Pain Level: {user_info.get('pain', '')}\n"
     agent_messages = [
         {
             "role": "system",
@@ -141,14 +160,13 @@ def send_message():
         },
         {
             "role": "user",
-            "content": ([{"type": "text", "text": agent_context.strip()}] + image_content)
+            "content": [{"type": "text", "text": agent_context.strip()}]
         }
     ]
-    # Get all chat history for this bandwidth
-    history = list(db.chats.find({'bandwidth': bandwidth}, {'_id': 0}))
+    history = list(db.chats.find({'bandwidth': bandwidth, 'role': {'$in': ['user', 'assistant']}}, {'_id': 0}))
     for msg in history:
         if msg['role'] == 'user':
-            user_text = msg.get('message', '') or msg.get('symptoms', '')
+            user_text = msg.get('message', '')
             content_list = [{"type": "text", "text": user_text}]
             for img_path in msg.get('images', []):
                 content_list.append({
@@ -181,18 +199,13 @@ def send_message():
         temperature = 1,
         top_p = 1,
     )
-    # Improve output spacing for readability
     assistant_reply = response.choices[0].message.content if response.choices else "No response."
     if assistant_reply:
-        # Add extra line breaks between sections if not present
         import re
-        # Add two newlines before each section header for clear separation
         assistant_reply = re.sub(r'(\*\*Possible Diagnosis\*\*)', r'\n\n\1\n', assistant_reply)
         assistant_reply = re.sub(r'(\*\*Priority Level\*\*)', r'\n\n\1\n', assistant_reply)
         assistant_reply = re.sub(r'(\*\*Recommended Next Steps\*\*)', r'\n\n\1\n', assistant_reply)
-        # Add extra spacing after numbered steps
         assistant_reply = re.sub(r'(\d+\.)', r'\n\1', assistant_reply)
-    # Save CAIR response
     assistant_payload = {
         'role': 'assistant',
         'response': assistant_reply,
