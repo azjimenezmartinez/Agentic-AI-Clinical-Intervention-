@@ -169,48 +169,6 @@ def send_message():
     save_message_to_db(assistant_payload)
     return jsonify({'response': assistant_reply})
 
-@app.route('/api/send_message', methods=['POST'])
-def send_message():
-    data = request.json
-    message = data.get('message')
-    bandwidth = data.get('bandwidth')
-    # Save user message
-    db.chats.insert_one({'role': 'user', 'content': message, 'bandwidth': bandwidth})
-    # Build messages for agent
-    history = list(db.chats.find({'bandwidth': bandwidth}, {'_id': 0, 'role': 1, 'content': 1}))
-    agent_messages = [
-        {
-            "role": "system",
-            "content": "You are CAIR (Clinical Agent for Intelligent Response), an assistive clinical reasoning agent designed to support non-specialist healthcare workers in low-resource or rural environments. You do NOT replace a medical professional. Your job is to provide structured, safe, supportive guidance based only on the symptoms and image descriptions provided by the user."
-        }
-    ]
-    for msg in history:
-        agent_messages.append({
-            "role": msg['role'],
-            "content": [
-                {
-                    "type": "text",
-                    "text": msg['content']
-                }
-            ]
-        })
-    # Call agent (replace hardcoded prompt with user input)
-    import openai
-    client = openai.OpenAI(
-        base_url = "https://models.github.ai/inference",
-        api_key = os.environ.get("GITHUB_TOKEN", ""),
-        default_query = {"api-version": "2024-08-01-preview"},
-    )
-    response = client.chat.completions.create(
-        messages = agent_messages,
-        model = "openai/gpt-4.1",
-        response_format = {"type": "text"},
-        temperature = 1,
-        top_p = 1,
-    )
-    assistant_reply = response.choices[0].message.content if response.choices else "No response."
-    db.chats.insert_one({'role': 'assistant', 'content': assistant_reply, 'bandwidth': bandwidth})
-    return jsonify({'response': assistant_reply})
 
 @app.route('/api/upload_image', methods=['POST'])
 def upload_image():
