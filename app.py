@@ -55,8 +55,7 @@ def now():
 
 
 
-# API: Send follow-up message (handles all bandwidths)
-@app.route('/api/send_message', methods=['POST'])
+## Removed duplicate /api/send_message route definition
 
 # API: Start chat with initial user info (no symptoms)
 @app.route('/api/start_chat', methods=['POST'])
@@ -186,20 +185,34 @@ def send_message():
             })
 
     # Call CAIR agent
-    import openai
-    client = openai.OpenAI(
+    from openai import OpenAI
+    client = OpenAI(
         base_url = "https://models.github.ai/inference",
-        api_key = os.environ.get("GITHUB_TOKEN", ""),
-        default_query = {"api-version": "2024-08-01-preview"},
+        api_key = os.environ["GITHUB_TOKEN"],
+        default_query = {
+            "api-version": "2024-08-01-preview",
+        },
     )
-    response = client.chat.completions.create(
-        messages = agent_messages,
-        model = "openai/gpt-4.1",
-        response_format = {"type": "text"},
-        temperature = 1,
-        top_p = 1,
-    )
-    assistant_reply = response.choices[0].message.content if response.choices else "No response."
+    tools = []
+    response_format = {"type": "text"}
+    assistant_reply = "No response."
+    try:
+        chat_response = client.chat.completions.create(
+            messages = agent_messages,
+            model = "openai/gpt-4.1",
+            tools = tools,
+            response_format = response_format,
+            temperature = 1,
+            top_p = 1,
+        )
+        if chat_response.choices:
+            # If there are tool calls, handle them (not implemented in Flask yet)
+            if chat_response.choices[0].message.tool_calls:
+                assistant_reply = str(chat_response.choices[0].message.tool_calls)
+            else:
+                assistant_reply = chat_response.choices[0].message.content
+    except Exception as e:
+        assistant_reply = f"Agent error: {str(e)}"
     if assistant_reply:
         import re
         assistant_reply = re.sub(r'(\*\*Possible Diagnosis\*\*)', r'\n\n\1\n', assistant_reply)
@@ -213,7 +226,7 @@ def send_message():
         'timestamp': now()
     }
     save_message_to_db(assistant_payload)
-    return jsonify({'response': assistant_reply})
+    return jsonify({'response': assistant_reply, 'content': assistant_reply})
 
 
 @app.route('/api/upload_image', methods=['POST'])
