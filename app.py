@@ -152,6 +152,15 @@ def send_message():
         agent_context = f"Patient Age: {user_info.get('age', '')}\nSex at Birth: {user_info.get('sex', '')}\n"
         if user_info.get('pain') is not None:
             agent_context += f"Pain Level: {user_info.get('pain', '')}\n"
+    # Always include age and sex at birth in the first user message to the agent
+    user_info_text = agent_context.strip()
+    if not user_info_text:
+        # Fallback: try to get latest user_info from MongoDB
+        latest_info = db.chats.find_one({'role': 'user_info'}, sort=[('timestamp', -1)])
+        if latest_info:
+            user_info_text = f"Patient Age: {latest_info.get('age', '')}\nSex at Birth: {latest_info.get('sex', '')}"
+            if latest_info.get('pain') is not None:
+                user_info_text += f"\nPain Level: {latest_info.get('pain', '')}"
     agent_messages = [
         {
             "role": "system",
@@ -159,7 +168,7 @@ def send_message():
         },
         {
             "role": "user",
-            "content": [{"type": "text", "text": agent_context.strip()}]
+            "content": [{"type": "text", "text": user_info_text}]
         }
     ]
     history = list(db.chats.find({'bandwidth': bandwidth, 'role': {'$in': ['user', 'assistant']}}, {'_id': 0}))
@@ -252,8 +261,7 @@ def chat_history():
 
 @app.route('/api/clear_history', methods=['POST'])
 def clear_history():
-    db.chats.delete_many({})
-    db.images.delete_many({})
+    # Only clear chat history from UI, do not delete any MongoDB records
     return jsonify({'status': 'cleared'})
 
 if __name__ == '__main__':
